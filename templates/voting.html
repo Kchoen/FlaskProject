@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./index.css" />
+    <title>開始投票</title>
+  </head>
+
+  <script src="../static/vue.js"></script>
+
+  <body>
+    <div class="app" id="app">
+      <h1 align="center">{{ eventTitle }}</h1>
+
+      <div class="section1" v-if="show_available">
+        <div v-if="voteCat == ''">
+          <h1 align="center">Available</h1>
+          <div align="center" style="font-size: 18pt" v-for="usr in username_list">{{ usr }}</div>
+        </div>
+        <div v-else>
+          <h1 align="center">Available</h1>
+          <div align="center" style="font-size: 18pt" v-for="usr in username_list">{{ usr }}</div>
+        </div>
+        <!--div style="display: flex;justify-content: space-around" v-else>
+          <div style="padding-right: 20px; margin-right: 20px; border-right: 3px solid #000">
+            <h1 align="center">Available</h1>
+            <div align="center" style="font-size: 18pt" v-for="usr in username_list">{{ usr }}</div>
+            <br><br>
+          </div>
+          <div v-for="option in customCandidates" style="">
+            <h1 align="center">{{option}}</h1>
+            <div align="center" style="font-size: 18pt" v-for="usr in option_available(option)">{{ usr }}</div>
+          </div>
+        </div!-->
+      </div>
+      <div class="section1" v-else-if="checkusr">
+        <h2 align="center">{{checkusr}} 的投票結果</h2>
+        <ul class="timeList">
+          <div v-for="day in days">
+            <li class="day">{{ day }}</li>
+            <button v-for="option in times" class="option" v-bind:style="{ backgroundColor: (values[day + ' : ' + option].includes(',' + checkusr + ','))? '#bbb': '' }">{{option}}</button>
+            <br />
+          </div>
+        </ul>
+        <ul class="timeList" v-if="voteCat!=''">
+          <li class="day">{{ voteCat }}</li>
+          <button v-for="option in customCandidates" class="option" v-bind:style="{ backgroundColor: (custom_options[option].includes(',' + checkusr + ','))? '#bbb': '' }">{{option}}</button>
+        </ul>
+      </div>
+      <div class="section1" v-else>
+        <div v-if="did_login">
+          <h2 align="center">開始投票 User: {{ usr }}</h2>
+          <ul class="timeList">
+            <div v-for="day in days">
+              <li class="day">{{ day }}</li>
+              <button v-for="option in times" class="option" @click="PressOneDay($event, day + ' : ' + option)" v-bind:style="{ backgroundColor: (values[day + ' : ' + option].includes(',' + usr + ','))? '#bbb': '' }">{{option}}</button>
+            </div>
+          </ul>
+          <ul class="timeList" v-if="voteCat != ''">
+            <li class="day">{{ voteCat }}</li>
+            <button v-for="option in customCandidates" class="option" @click="PressOneCustom($event, option)" v-bind:style="{ backgroundColor: (custom_options[option].includes(',' + usr + ','))? '#bbb': '' }">{{option}}</button>
+          </ul>
+        </div>
+
+        <div v-else>
+          <h2 align="center">開始投票</h2>
+          <form action="#" method="POST">
+            <table align='center' style="transform: translate(-10%, 0);">
+              <tr>
+                <td>Email:</td>
+                <td align="left"><input type="text" style="width: 150px" name="email" /></td>
+              </tr>
+              <tr>
+                <td>Password:</td>
+                <td align="left">
+                  <input type="password" style="width: 150px" name="password" />
+                  <span style="color: red" v-if="wrong_password"> Wrong password </span>
+                </td>
+              </tr>
+              <tr>
+                <td></td>
+                <td align="left"><input value="登入" type="submit" name="submit" style="font-size: 18px;width: 150px" /></td>
+              </tr>
+            </table>
+          </form>
+        </div>
+      </div>
+
+      <div class="section2">
+        <button class="tablink" @click="view_result='目前投票情形'" :style="{backgroundColor: view_result=='目前投票情形'?'red':''}">目前投票情形</button>
+        <button class="tablink" @click="view_result='所有使用者'" :style="{backgroundColor: view_result=='所有使用者'?'red':''}">所有使用者</button>
+        <button class="tablink" @click="view_result='顯示最高票'" :style="{backgroundColor: view_result=='顯示最高票'?'red':''}">顯示最高票</button>
+
+        <div style="clear: left"></div>
+
+        <div v-if="view_result=='目前投票情形'">
+          <ul class="timeList">
+            <div v-for="day in days">
+              <li class="day">{{ day }}</li>
+              <li v-for="option in times" class="option" @mouseover="use_custom=false;ViewOnesResult($event, day + ' : ' + option)" @mouseleave="unViewOnesResult($event)" v-bind:style="{ backgroundColor: get_rgba(number_user(values[day + ' : ' + option]) / usernames.length) }">{{ option }}</li>
+              <br />
+            </div>
+          </ul>
+          <ul class="timeList" v-if="voteCat != ''">
+            <li class="day">{{ voteCat }}</li>
+            <li v-for="option in customCandidates" class="option" @mouseover="use_custom=true;ViewOnesResult($event, option)" @mouseleave="unViewOnesResult($event)" v-bind:style="{ backgroundColor: get_rgba(number_user(custom_options[option]) / usernames.length) }">{{option}}</li>
+          </ul>
+        </div>
+        <div v-if="view_result=='所有使用者'">
+          <br>
+          <div align="center" style="font-size: 18pt">
+            <div v-for="username in usernames" @mouseover="ViewOnesSelection($event, username)" @mouseleave="unViewOnesSelection($event)">{{username}}</div>
+          </div>
+        </div>
+
+        <div v-if="view_result=='顯示最高票'">
+          <br>
+          <div align="center" style="font-size: 18pt">
+            <div v-for="(_, i) in sorted_options.length < 100? sorted_options.length : 100">
+              {{sorted_options[i][1]}}/{{usernames.length}} {{sorted_options[i][0]}}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div id="logout" v-if="did_login">
+      <button @click="pressLogout()">登出</button>
+    </div>
+  </body>
+</html>
+
+<script src="../static/axios.min.js"></script>
+
+<script>
+  let vm2 = new Vue({
+    el: "#logout",
+    data: {
+      did_login: [[[did_login]]],
+    },
+    methods: {
+      pressLogout(dummy) {
+        if (!confirm("登出?")) {
+          return;
+        }
+        axios.post("#", { data: "logout" });
+        window.location.href += "/login";
+        flash();
+      },
+    },
+  });
+
+  let data = {
+    eventTitle: "[[[eventTitle]]]",
+    did_login: [[[did_login]]],
+    usr: "[[[usr]]]",
+    days: [[[days | safe]]],
+    times: [[[times | safe]]],
+    customCandidates: [[[customCandidates | safe]]],
+    voteCat: "[[[voteCat]]]",
+    wrong_password: [[[wrong_password]]],
+    usernames: [[[usernames | safe]]],
+    custom_options: [[[custom_options | safe]]],
+    values: [[[values | safe]]],
+
+    key: "",
+    show_available: false,
+    use_custom: false,
+    checkusr: "",
+    color_holder: "",
+    view_result: "目前投票情形",
+  };
+
+  let vm = new Vue({
+    el: "#app",
+    data: data,
+    methods: {
+      option_available(option) {
+        list = []
+        avail_usrs = this.username_list;
+        option_all_usrs = this.custom_options[option];
+        for (i = 0; i < avail_usrs.length;i++) {
+          if (option_all_usrs.includes(","+avail_usrs[i]+",")) {
+            list.push(avail_usrs[i])
+          }
+        }
+        return list;
+      },
+      ViewOnesSelection(evt, usrname) {
+        this.checkusr = usrname;
+        evt.target.style.backgroundColor = "red";
+      },
+      unViewOnesSelection(evt) {
+        this.checkusr = "";
+        evt.target.style.backgroundColor = "";
+      },
+      ViewOnesResult(evt, key) {
+        this.key = key;
+        this.show_available = true;
+        this.color_holder = evt.target.style.backgroundColor;
+        evt.target.style.backgroundColor = "red";
+      },
+      unViewOnesResult(evt) {
+        this.show_available = false;
+        evt.target.style.backgroundColor = this.color_holder;
+      },
+      PressOneDay(evt, key) {
+        string = this.values[key];
+        if (string.includes("," + this.usr + ",")) {
+          this.values[key] = string.replace("," + this.usr + ",", "");
+        } else {
+          this.values[key] = string + ("," + this.usr + ",");
+        }
+        form_data = {
+          data: "pressed",
+          option: key,
+        };
+        axios.post("#", form_data).then((response) => {
+          console.log(response);
+        });
+      },
+      PressOneCustom(evt, key) {
+        string = this.custom_options[key];
+        if (string.includes("," + this.usr + ",")) {
+          this.custom_options[key] = string.replace("," + this.usr + ",", "");
+        } else {
+          this.custom_options[key] = string + ("," + this.usr + ",");
+        }
+        form_data = {
+          data: "pressed",
+          option: "customVote" + key,
+        };
+        axios.post("#", form_data);
+      },
+      number_user(names) {
+        if (names.length == 0) return 0;
+        n = 1;
+        pos=0;
+        while (true) {
+            pos = names.indexOf(',,', pos);
+            if (pos >= 0) {
+                ++n;
+                pos += 2;
+            } else break;
+        }
+        return n;
+      },
+      get_rgba(a, rgb = "#4EFEB3") {
+        return "rgba(" + parseInt(rgb.slice(-6, -4), 16) + "," + parseInt(rgb.slice(-4, -2), 16) + "," + parseInt(rgb.slice(-2), 16) + "," + a + ")";
+      },
+    },
+    computed: {
+      username_list() {
+        names = this.use_custom ? this.custom_options[this.key] : this.values[this.key];
+        if (names.length == 0) return [];
+        return names.slice(1, -1).split(",,").sort();
+      },
+      best_option() {
+        best_string = 0;
+        best_value = 0;
+        for (day_index = 0; day_index < this.days.length; day_index++) {
+          for (time_index = 0; time_index < this.times.length; time_index++) {
+            day = this.days[day_index];
+            time = this.times[time_index];
+            string = day + ' : ' + time;
+            temp = this.number_user(this.values[string]);
+            if (temp > best_value) {
+              best_value = temp;
+              best_string = string;
+            }
+          }
+        }
+        return best_string;
+      },
+      sorted_options() {
+        A_B = []
+        for (day_index = 0; day_index < this.days.length; day_index++) {
+          for (time_index = 0; time_index < this.times.length; time_index++) {
+            day = this.days[day_index];
+            time = this.times[time_index];
+            string = day + ' : ' + time;
+            temp = this.number_user(this.values[string]);
+            A_B.push([string, temp])
+          }
+        }
+        A_B.sort(function(a, b) {
+            return ((a[1] < b[1]) ? 1 : ((a[1] == b[1]) ? 0 : -1));
+        });
+        return A_B;
+      },
+    },
+  });
+</script>
